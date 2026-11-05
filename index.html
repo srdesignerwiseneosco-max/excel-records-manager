@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Excel Records Manager · डेटा मैनेजर</title>
+<meta name="description" content="Manage Excel records in your browser. Import, edit, search, export. Data never leaves your device." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2316a34a'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='34' fill='white' font-family='Arial'%3EX%3C/text%3E%3C/svg%3E" />
+<style>
+:root {
+  --bg: #f4f6f8;
+  --bg2: #ffffff;
+  --bg3: #eef2f6;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #dbe2ea;
+  --primary: #16a34a;
+  --primary-d: #15803d;
+  --primary-soft: #dcfce7;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --warn: #d97706;
+  --warn-soft: #fef3c7;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --shadow: 0 8px 24px rgba(15,23,42,.08);
+  --radius: 14px;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+[data-theme="dark"] {
+  --bg: #0b1220;
+  --bg2: #121a2b;
+  --bg3: #1a2438;
+  --text: #e5eefb;
+  --muted: #94a3b8;
+  --border: #243047;
+  --primary: #22c55e;
+  --primary-d: #16a34a;
+  --primary-soft: #14532d;
+  --danger: #f87171;
+  --danger-soft: #7f1d1d;
+  --warn: #fbbf24;
+  --warn-soft: #78350f;
+  --accent: #60a5fa;
+  --accent-soft: #1e3a8a;
+  --shadow: 0 10px 28px rgba(0,0,0,.35);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.45;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent); }
+.app { max-width: 1400px; margin: 0 auto; padding: 16px; }
+.topbar {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, #16a34a, #0ea5e9);
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 18px;
+  box-shadow: var(--shadow);
+}
+.brand h1 { margin: 0; font-size: 1.25rem; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: .85rem; }
+.hint { color: var(--muted); font-size: .78rem; }
+.toolbar, .filters, .pager, .dash {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 12px; margin-bottom: 12px;
+}
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  border: 1px solid var(--border); background: var(--bg3); color: var(--text);
+  border-radius: 10px; padding: 8px 12px; font-weight: 600; font-size: .9rem;
+  display: inline-flex; gap: 6px; align-items: center; transition: .15s ease;
+}
+.btn:hover { transform: translateY(-1px); border-color: var(--primary); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-d); }
+.btn-danger { background: var(--danger-soft); border-color: transparent; color: var(--danger); }
+.btn-ghost { background: transparent; }
+.btn-sm { padding: 5px 9px; font-size: .8rem; border-radius: 8px; }
+.sep { width: 1px; height: 28px; background: var(--border); margin: 0 2px; }
+.filters { display: grid; gap: 10px; }
+.filters-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.search {
+  flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg); outline: none;
+}
+.search:focus, .field input:focus, .field select:focus, .modal input:focus, .modal select:focus, .modal textarea:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft);
+}
+.col-filters {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
+}
+.col-filters input {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+}
+.table-wrap {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: auto; max-height: calc(100vh - 340px); min-height: 280px;
+}
+table { width: 100%; border-collapse: collapse; min-width: 640px; }
+th, td {
+  border-bottom: 1px solid var(--border); padding: 9px 10px; text-align: left;
+  white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis;
+}
+th {
+  position: sticky; top: 0; background: var(--bg3); z-index: 2;
+  font-size: .82rem; letter-spacing: .02em; user-select: none;
+}
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--primary); }
+th .sort { opacity: .45; margin-left: 4px; }
+tr:hover td { background: color-mix(in srgb, var(--primary-soft) 45%, transparent); }
+tr.selected td { background: var(--accent-soft); }
+td.editable { cursor: text; }
+td.editing { padding: 2px; }
+td.editing input {
+  width: 100%; padding: 7px 8px; border: 1px solid var(--primary);
+  border-radius: 6px; background: var(--bg2); outline: none;
+}
+.dup td { background: var(--warn-soft) !important; }
+.pager {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+}
+.pager-left, .pager-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dash {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;
+}
+.stat {
+  background: var(--bg3); border-radius: 12px; padding: 12px;
+  border: 1px solid transparent;
+}
+.stat .label { color: var(--muted); font-size: .78rem; }
+.stat .value { font-size: 1.25rem; font-weight: 800; margin-top: 4px; }
+.stat.num .value { color: var(--primary); }
+.empty {
+  padding: 48px 20px; text-align: center; color: var(--muted);
+}
+.empty h2 { margin: 0 0 8px; color: var(--text); }
+.dropzone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 28px; margin: 12px 0; text-align: center; background: var(--bg2);
+  transition: .15s ease;
+}
+.dropzone.drag { border-color: var(--primary); background: var(--primary-soft); }
+.modal-back {
+  position: fixed; inset: 0; background: rgba(15,23,42,.55); display: none;
+  align-items: center; justify-content: center; z-index: 50; padding: 16px;
+}
+.modal-back.open { display: flex; }
+.modal {
+  width: min(560px, 100%); max-height: 90vh; overflow: auto;
+  background: var(--bg2); border-radius: 16px; border: 1px solid var(--border);
+  box-shadow: var(--shadow); padding: 18px;
+}
+.modal h3 { margin: 0 0 6px; }
+.modal .hint { margin-bottom: 14px; }
+.fields { display: grid; gap: 10px; }
+.field label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 4px; }
+.field input, .field select, .field textarea, .modal input, .modal select, .modal textarea {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg); outline: none;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.toast-wrap {
+  position: fixed; right: 16px; bottom: 16px; z-index: 80; display: grid; gap: 8px;
+}
+.toast {
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+  padding: 10px 14px; border-radius: 12px; box-shadow: var(--shadow);
+  min-width: 220px; animation: slide .2s ease;
+}
+.toast.ok { border-left: 4px solid var(--primary); }
+.toast.err { border-left: 4px solid var(--danger); }
+@keyframes slide { from { transform: translateY(8px); opacity: 0; } }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+  border-radius: 999px; background: var(--warn-soft); color: var(--warn);
+  font-size: .75rem; font-weight: 700;
+}
+.hidden { display: none !important; }
+@media (max-width: 720px) {
+  .app { padding: 10px; }
+  .table-wrap { max-height: calc(100vh - 420px); }
+  .sep { display: none; }
+  .brand h1 { font-size: 1.05rem; }
+}
+@media print {
+  .topbar, .toolbar, .filters, .pager, .toast-wrap, .modal-back, .dropzone, .no-print { display: none !important; }
+  .table-wrap { max-height: none; overflow: visible; box-shadow: none; border: none; }
+  body { background: #fff; color: #000; }
+  th { background: #eee !important; color: #000; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">XL</div>
+      <div>
+        <h1>Excel Records Manager</h1>
+        <p>Easy Excel data management · आसानी से रिकॉर्ड संभालें · Stays on your device</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span id="dirtyBadge" class="badge hidden">Unsaved changes · सेव करें</span>
+      <button class="btn btn-ghost" id="themeBtn" title="Toggle theme">🌙 Dark</button>
+    </div>
+  </header>
+
+  <section class="dash" id="dashboard">
+    <div class="stat"><div class="label">Records · रिकॉर्ड</div><div class="value" id="statRows">0</div></div>
+    <div class="stat"><div class="label">Columns · कॉलम</div><div class="value" id="statCols">0</div></div>
+    <div class="stat"><div class="label">Showing · दिख रहे</div><div class="value" id="statShown">0</div></div>
+    <div class="stat"><div class="label">Duplicates · डुप्लिकेट</div><div class="value" id="statDups">0</div></div>
+  </section>
+
+  <section class="toolbar" id="toolbar">
+    <button class="btn btn-primary" id="importBtn">📂 Import Excel/CSV</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden multiple />
+    <button class="btn" id="blankBtn">📄 New blank sheet</button>
+    <span class="sep"></span>
+    <label class="hint" for="sheetSelect">Sheet · शीट</label>
+    <select id="sheetSelect" class="btn" style="padding:8px 10px"></select>
+    <span class="sep"></span>
+    <button class="btn" id="addRowBtn">➕ Add record</button>
+    <button class="btn" id="undoBtn" disabled>↶ Undo</button>
+    <button class="btn btn-danger" id="bulkDelBtn" disabled>🗑 Delete selected</button>
+    <span class="sep"></span>
+    <button class="btn" id="addColBtn">＋ Column</button>
+    <button class="btn" id="renameColBtn">✎ Rename col</button>
+    <button class="btn btn-danger" id="delColBtn">− Delete col</button>
+    <span class="sep"></span>
+    <button class="btn" id="exportXlsxBtn">⬇ Export .xlsx</button>
+    <button class="btn" id="exportCsvBtn">⬇ Export .csv</button>
+    <button class="btn" id="printBtn">🖨 Print</button>
+    <button class="btn" id="dupBtn">⚠ Find duplicates</button>
+    <button class="btn btn-ghost" id="clearBtn">Clear all</button>
+  </section>
+
+  <div class="dropzone" id="dropzone">
+    Drop Excel / CSV here, or click Import · फ़ाइल यहाँ छोड़ें
+  </div>
+
+  <section class="filters">
+    <div class="filters-top">
+      <input class="search" id="globalSearch" placeholder="Search all columns · सब में खोजें…" />
+      <select id="pageSize" class="btn" title="Rows per page">
+        <option value="10">10 / page</option>
+        <option value="25" selected>25 / page</option>
+        <option value="50">50 / page</option>
+        <option value="100">100 / page</option>
+        <option value="0">All</option>
+      </select>
+      <button class="btn btn-sm" id="clearFiltersBtn">Clear filters</button>
+    </div>
+    <div class="col-filters" id="colFilters"></div>
+  </section>
+
+  <div class="table-wrap" id="tableWrap">
+    <div class="empty" id="emptyState">
+      <h2>No data yet · अभी कोई डेटा नहीं</h2>
+      <p>Import an Excel/CSV file or create a blank sheet to start managing records.</p>
+      <p class="hint">Your data stays in this browser only. Nothing is uploaded.</p>
+    </div>
+    <table id="dataTable" class="hidden">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <section class="pager">
+    <div class="pager-left">
+      <span id="pageInfo" class="hint">Page 1</span>
+      <span id="selectionInfo" class="hint"></span>
+    </div>
+    <div class="pager-right">
+      <button class="btn btn-sm" id="prevBtn">← Prev</button>
+      <button class="btn btn-sm" id="nextBtn">Next →</button>
+    </div>
+  </section>
+</div>
+
+<div class="modal-back" id="modalBack">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modalTitle">Edit record</h3>
+    <p class="hint" id="modalHint">Fill the fields · फ़ील्ड भरें</p>
+    <div class="fields" id="modalFields"></div>
+    <div class="modal-actions">
+      <button class="btn" id="modalCancel">Cancel</button>
+      <button class="btn btn-primary" id="modalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+if (typeof XLSX === 'undefined') {
+  document.write('<script src="xlsx.full.min.js"><\/script>');
+}
+</script>
+<script>
+(function () {
+  'use strict';
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+
+  const state = {
+    workbookName: 'records',
+    sheets: {},        // name -> { columns: string[], rows: object[] }
+    activeSheet: null,
+    sheetOrder: [],
+    sortCol: null,
+    sortDir: 1,
+    page: 1,
+    pageSize: 25,
+    globalQ: '',
+    colFilters: {},
+    selected: new Set(),
+    highlightDups: false,
+    dupKeys: new Set(),
+    history: [],
+    dirty: false,
+    theme: localStorage.getItem('erm_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+    modalMode: null, // 'add' | 'edit' | 'addcol' | 'renamecol' | 'delcol'
+    editIndex: null,
+    inline: null, // { rowIdx, col }
+  };
+
+  const DB_NAME = 'excel_records_manager';
+  const DB_STORE = 'workspace';
+  const LS_KEY = 'erm_workspace_v1';
+
+  // ---------- persistence ----------
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) return reject(new Error('no idb'));
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveWorkspace() {
+    const payload = {
+      workbookName: state.workbookName,
+      sheets: state.sheets,
+      activeSheet: state.activeSheet,
+      sheetOrder: state.sheetOrder,
+      savedAt: Date.now(),
+    };
+    try { localStorage.setItem(LS_KEY, JSON.stringify(payload)); } catch (_) {}
+    try {
+      const db = await openDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put(payload, 'main');
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+    } catch (_) {}
+    state.dirty = false;
+    updateDirty();
+  }
+
+  async function loadWorkspace() {
+    let payload = null;
+    try {
+      const db = await openDB();
+      payload = await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).get('main');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+    } catch (_) {}
+    if (!payload) {
+      try { payload = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (_) {}
+    }
+    if (payload && payload.sheets && payload.sheetOrder && payload.sheetOrder.length) {
+      state.workbookName = payload.workbookName || 'records';
+      state.sheets = payload.sheets;
+      state.sheetOrder = payload.sheetOrder;
+      state.activeSheet = payload.activeSheet || payload.sheetOrder[0];
+      return true;
+    }
+    return false;
+  }
+
+  let saveTimer = null;
+  function scheduleSave() {
+    state.dirty = true;
+    updateDirty();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveWorkspace(), 400);
+  }
+
+  function updateDirty() {
+    $('#dirtyBadge').classList.toggle('hidden', !state.dirty);
+  }
+
+  // ---------- history / undo ----------
+  function pushHistory() {
+    const snap = JSON.stringify({
+      sheets: state.sheets,
+      activeSheet: state.activeSheet,
+      sheetOrder: state.sheetOrder,
+    });
+    state.history.push(snap);
+    if (state.history.length > 40) state.history.shift();
+    $('#undoBtn').disabled = state.history.length === 0;
+  }
+
+  function undo() {
+    if (!state.history.length) return;
+    const snap = JSON.parse(state.history.pop());
+    state.sheets = snap.sheets;
+    state.activeSheet = snap.activeSheet;
+    state.sheetOrder = snap.sheetOrder;
+    state.selected.clear();
+    $('#undoBtn').disabled = state.history.length === 0;
+    scheduleSave();
+    renderAll();
+    toast('Undone · वापस लिया', 'ok');
+  }
+
+  // ---------- helpers ----------
+  function sheet() {
+    return state.activeSheet ? state.sheets[state.activeSheet] : null;
+  }
+
+  function toast(msg, type = 'ok') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    $('#toasts').appendChild(el);
+    setTimeout(() => el.remove(), 2800);
+  }
+
+  function isNumeric(v) {
+    if (v === null || v === undefined || v === '') return false;
+    if (typeof v === 'number') return Number.isFinite(v);
+    const n = Number(String(v).replace(/,/g, '').trim());
+    return String(v).trim() !== '' && Number.isFinite(n);
+  }
+
+  function toNum(v) {
+    if (typeof v === 'number') return v;
+    return Number(String(v).replace(/,/g, '').trim());
+  }
+
+  function rowKey(row, cols) {
+    return cols.map(c => String(row[c] ?? '').trim().toLowerCase()).join('||');
+  }
+
+  function computeDups(sh) {
+    const map = new Map();
+    const keys = new Set();
+    sh.rows.forEach((r, i) => {
+      const k = rowKey(r, sh.columns);
+      if (!k.replace(/\|/g, '')) return;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(i);
+    });
+    map.forEach(arr => { if (arr.length > 1) arr.forEach(i => keys.add(i)); });
+    return keys;
+  }
+
+  function filteredRows() {
+    const sh = sheet();
+    if (!sh) return [];
+    const q = state.globalQ.trim().toLowerCase();
+    let rows = sh.rows.map((r, i) => ({ r, i }));
+    if (q) {
+      rows = rows.filter(({ r }) =>
+        sh.columns.some(c => String(r[c] ?? '').toLowerCase().includes(q))
+      );
+    }
+    Object.entries(state.colFilters).forEach(([col, fv]) => {
+      const f = String(fv || '').trim().toLowerCase();
+      if (!f) return;
+      rows = rows.filter(({ r }) => String(r[col] ?? '').toLowerCase().includes(f));
+    });
+    if (state.sortCol && sh.columns.includes(state.sortCol)) {
+      const col = state.sortCol;
+      const dir = state.sortDir;
+      rows.sort((a, b) => {
+        const av = a.r[col], bv = b.r[col];
+        const an = isNumeric(av), bn = isNumeric(bv);
+        let cmp;
+        if (an && bn) cmp = toNum(av) - toNum(bv);
+        else cmp = String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true, sensitivity: 'base' });
+        return cmp * dir;
+      });
+    }
+    return rows;
+  }
+
+  // ---------- import ----------
+  function parseWorkbook(wb, filename) {
+    pushHistory();
+    state.workbookName = (filename || 'records').replace(/\.(xlsx|xls|csv)$/i, '');
+    state.sheets = {};
+    state.sheetOrder = [];
+    wb.SheetNames.forEach(name => {
+      const ws = wb.Sheets[name];
+      const json = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+      let columns = [];
+      if (json.length) {
+        columns = Object.keys(json[0]);
+      } else {
+        const ref = ws['!ref'];
+        if (ref) {
+          const range = XLSX.utils.decode_range(ref);
+          for (let c = range.s.c; c <= range.e.c; c++) {
+            const addr = XLSX.utils.encode_cell({ r: range.s.r, c });
+            const cell = ws[addr];
+            columns.push(cell ? String(cell.v) : `Column ${c + 1}`);
+          }
+        }
+        if (!columns.length) columns = ['Column 1', 'Column 2', 'Column 3'];
+      }
+      // normalize rows to have all columns
+      const rows = json.map(obj => {
+        const row = {};
+        columns.forEach(c => { row[c] = obj[c] ?? ''; });
+        return row;
+      });
+      state.sheets[name] = { columns, rows };
+      state.sheetOrder.push(name);
+    });
+    state.activeSheet = state.sheetOrder[0] || null;
+    state.selected.clear();
+    state.page = 1;
+    state.colFilters = {};
+    state.globalQ = '';
+    state.sortCol = null;
+    state.highlightDups = false;
+    scheduleSave();
+    renderAll();
+    toast(`Imported ${state.sheetOrder.length} sheet(s) · इम्पोर्ट हो गया`, 'ok');
+  }
+
+  function handleFiles(files) {
+    const file = files && files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: 'array', cellDates: true });
+        parseWorkbook(wb, file.name);
+      } catch (err) {
+        console.error(err);
+        toast('Could not read file · फ़ाइल नहीं पढ़ी गई', 'err');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function newBlankSheet() {
+    pushHistory();
+    const name = 'Sheet1';
+    state.workbookName = 'untitled';
+    state.sheets = {
+      [name]: {
+        columns: ['Name', 'Category', 'Amount', 'Date', 'Notes'],
+        rows: [],
+      },
+    };
+    state.sheetOrder = [name];
+    state.activeSheet = name;
+    state.selected.clear();
+    state.page = 1;
+    state.colFilters = {};
+    state.globalQ = '';
+    state.highlightDups = false;
+    scheduleSave();
+    renderAll();
+    toast('Blank sheet ready · खाली शीट तैयार', 'ok');
+  }
+
+  // ---------- export ----------
+  function buildWorkbook() {
+    const wb = XLSX.utils.book_new();
+    state.sheetOrder.forEach(name => {
+      const sh = state.sheets[name];
+      const aoa = [sh.columns, ...sh.rows.map(r => sh.columns.map(c => r[c] ?? ''))];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+    });
+    return wb;
+  }
+
+  function exportXlsx() {
+    if (!state.sheetOrder.length) return toast('No data to export', 'err');
+    const wb = buildWorkbook();
+    XLSX.writeFile(wb, `${state.workbookName || 'records'}.xlsx`);
+    toast('Exported .xlsx · एक्सपोर्ट हो गया', 'ok');
+  }
+
+  function exportCsv() {
+    const sh = sheet();
+    if (!sh) return toast('No data to export', 'err');
+    const ws = XLSX.utils.aoa_to_sheet([sh.columns, ...sh.rows.map(r => sh.columns.map(c => r[c] ?? ''))]);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${state.workbookName || 'records'}_${state.activeSheet || 'sheet'}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Exported .csv', 'ok');
+  }
+
+  // ---------- CRUD ----------
+  function openModal(mode, idx) {
+    state.modalMode = mode;
+    state.editIndex = idx;
+    const back = $('#modalBack');
+    const fields = $('#modalFields');
+    fields.innerHTML = '';
+    const sh = sheet();
+
+    if (mode === 'add' || mode === 'edit') {
+      if (!sh) return;
+      $('#modalTitle').textContent = mode === 'add' ? 'Add record · नया रिकॉर्ड' : 'Edit record · संपादित करें';
+      $('#modalHint').textContent = 'Fields match your columns';
+      const row = mode === 'edit' ? sh.rows[idx] : {};
+      sh.columns.forEach(col => {
+        const wrap = document.createElement('div');
+        wrap.className = 'field';
+        wrap.innerHTML = `<label>${escapeHtml(col)}</label><input data-col="${escapeAttr(col)}" value="${escapeAttr(row[col] ?? '')}" />`;
+        fields.appendChild(wrap);
+      });
+    } else if (mode === 'addcol') {
+      $('#modalTitle').textContent = 'Add column · नया कॉलम';
+      $('#modalHint').textContent = 'Enter a new column name';
+      fields.innerHTML = `<div class="field"><label>Column name</label><input id="colNameInput" placeholder="e.g. Phone" /></div>
+        <div class="field"><label>Default value (optional)</label><input id="colDefaultInput" /></div>`;
+    } else if (mode === 'renamecol') {
+      if (!sh) return;
+      $('#modalTitle').textContent = 'Rename column · नाम बदलें';
+      $('#modalHint').textContent = 'Pick a column and new name';
+      fields.innerHTML = `<div class="field"><label>Column</label><select id="colPick">${sh.columns.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('')}</select></div>
+        <div class="field"><label>New name</label><input id="colNameInput" /></div>`;
+    } else if (mode === 'delcol') {
+      if (!sh) return;
+      $('#modalTitle').textContent = 'Delete column · कॉलम हटाएँ';
+      $('#modalHint').textContent = 'This removes the column from all records';
+      fields.innerHTML = `<div class="field"><label>Column</label><select id="colPick">${sh.columns.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('')}</select></div>`;
+    }
+    back.classList.add('open');
+    const first = fields.querySelector('input, select');
+    if (first) setTimeout(() => first.focus(), 50);
+  }
+
+  function closeModal() {
+    $('#modalBack').classList.remove('open');
+    state.modalMode = null;
+    state.editIndex = null;
+  }
+
+  function saveModal() {
+    const sh = sheet();
+    const mode = state.modalMode;
+    if (mode === 'add' || mode === 'edit') {
+      if (!sh) return;
+      pushHistory();
+      const row = {};
+      $$('#modalFields input[data-col]').forEach(inp => { row[inp.dataset.col] = inp.value; });
+      if (mode === 'add') sh.rows.push(row);
+      else sh.rows[state.editIndex] = row;
+      scheduleSave();
+      closeModal();
+      renderAll();
+      toast(mode === 'add' ? 'Record added · जुड़ गया' : 'Record updated · अपडेट', 'ok');
+    } else if (mode === 'addcol') {
+      if (!sh) return;
+      const name = ($('#colNameInput').value || '').trim();
+      if (!name) return toast('Enter a column name', 'err');
+      if (sh.columns.includes(name)) return toast('Column already exists', 'err');
+      pushHistory();
+      const def = ($('#colDefaultInput') || {}).value || '';
+      sh.columns.push(name);
+      sh.rows.forEach(r => { r[name] = def; });
+      scheduleSave();
+      closeModal();
+      renderAll();
+      toast('Column added', 'ok');
+    } else if (mode === 'renamecol') {
+      if (!sh) return;
+      const old = $('#colPick').value;
+      const name = ($('#colNameInput').value || '').trim();
+      if (!name) return toast('Enter a new name', 'err');
+      if (name !== old && sh.columns.includes(name)) return toast('Column already exists', 'err');
+      pushHistory();
+      const i = sh.columns.indexOf(old);
+      sh.columns[i] = name;
+      sh.rows.forEach(r => {
+        r[name] = r[old];
+        if (name !== old) delete r[old];
+      });
+      if (state.sortCol === old) state.sortCol = name;
+      if (state.colFilters[old] !== undefined) {
+        state.colFilters[name] = state.colFilters[old];
+        delete state.colFilters[old];
+      }
+      scheduleSave();
+      closeModal();
+      renderAll();
+      toast('Column renamed', 'ok');
+    } else if (mode === 'delcol') {
+      if (!sh) return;
+      if (sh.columns.length <= 1) return toast('Keep at least one column', 'err');
+      const col = $('#colPick').value;
+      pushHistory();
+      sh.columns = sh.columns.filter(c => c !== col);
+      sh.rows.forEach(r => { delete r[col]; });
+      delete state.colFilters[col];
+      if (state.sortCol === col) state.sortCol = null;
+      scheduleSave();
+      closeModal();
+      renderAll();
+      toast('Column deleted', 'ok');
+    }
+  }
+
+  function deleteRows(indices) {
+    const sh = sheet();
+    if (!sh || !indices.length) return;
+    pushHistory();
+    const set = new Set(indices);
+    sh.rows = sh.rows.filter((_, i) => !set.has(i));
+    state.selected.clear();
+    scheduleSave();
+    renderAll();
+    toast(`Deleted ${indices.length} record(s) · हटाया`, 'ok');
+  }
+
+  // ---------- render ----------
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  function renderSheetSelect() {
+    const sel = $('#sheetSelect');
+    sel.innerHTML = state.sheetOrder.map(n =>
+      `<option value="${escapeAttr(n)}" ${n === state.activeSheet ? 'selected' : ''}>${escapeHtml(n)}</option>`
+    ).join('');
+    sel.disabled = !state.sheetOrder.length;
+  }
+
+  function renderDashboard() {
+    const sh = sheet();
+    const filtered = filteredRows();
+    $('#statRows').textContent = sh ? sh.rows.length : 0;
+    $('#statCols').textContent = sh ? sh.columns.length : 0;
+    $('#statShown').textContent = filtered.length;
+    const dups = sh ? computeDups(sh) : new Set();
+    state.dupKeys = dups;
+    $('#statDups').textContent = dups.size;
+
+    // numeric summaries
+    const dash = $('#dashboard');
+    $$('.stat.num', dash).forEach(el => el.remove());
+    if (sh) {
+      sh.columns.forEach(col => {
+        const nums = sh.rows.map(r => r[col]).filter(isNumeric).map(toNum);
+        if (nums.length < 1) return;
+        const sum = nums.reduce((a, b) => a + b, 0);
+        const avg = sum / nums.length;
+        const el = document.createElement('div');
+        el.className = 'stat num';
+        el.innerHTML = `<div class="label">${escapeHtml(col)} · sum / avg</div>
+          <div class="value">${formatNum(sum)} <span style="font-size:.75rem;font-weight:600;color:var(--muted)">/ ${formatNum(avg)}</span></div>`;
+        dash.appendChild(el);
+      });
+    }
+  }
+
+  function formatNum(n) {
+    if (!Number.isFinite(n)) return '—';
+    return Math.abs(n) >= 1000 ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(Math.round(n * 100) / 100);
+  }
+
+  function renderColFilters() {
+    const sh = sheet();
+    const box = $('#colFilters');
+    box.innerHTML = '';
+    if (!sh) return;
+    sh.columns.forEach(col => {
+      const inp = document.createElement('input');
+      inp.placeholder = `Filter ${col}`;
+      inp.value = state.colFilters[col] || '';
+      inp.dataset.col = col;
+      inp.addEventListener('input', () => {
+        state.colFilters[col] = inp.value;
+        state.page = 1;
+        renderTable();
+        renderDashboard();
+      });
+      box.appendChild(inp);
+    });
+  }
+
+  function renderTable() {
+    const sh = sheet();
+    const table = $('#dataTable');
+    const empty = $('#emptyState');
+    if (!sh) {
+      table.classList.add('hidden');
+      empty.classList.remove('hidden');
+      $('#pageInfo').textContent = 'No sheet';
+      return;
+    }
+    empty.classList.add('hidden');
+    table.classList.remove('hidden');
+
+    const filtered = filteredRows();
+    const pageSize = state.pageSize === 0 ? Math.max(filtered.length, 1) : state.pageSize;
+    const pages = Math.max(1, Math.ceil(filtered.length / pageSize) || 1);
+    if (state.page > pages) state.page = pages;
+    const start = (state.page - 1) * pageSize;
+    const pageRows = filtered.slice(start, start + pageSize);
+
+    const thead = table.tHead;
+    thead.innerHTML = '';
+    const hr = document.createElement('tr');
+    const thCheck = document.createElement('th');
+    thCheck.innerHTML = `<input type="checkbox" id="checkAll" title="Select all on page" />`;
+    hr.appendChild(thCheck);
+    sh.columns.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'sortable';
+      th.dataset.col = col;
+      const arrow = state.sortCol === col ? (state.sortDir === 1 ? '▲' : '▼') : '↕';
+      th.innerHTML = `${escapeHtml(col)}<span class="sort">${arrow}</span>`;
+      th.addEventListener('click', () => {
+        if (state.sortCol === col) state.sortDir *= -1;
+        else { state.sortCol = col; state.sortDir = 1; }
+        renderTable();
+      });
+      hr.appendChild(th);
+    });
+    const thAct = document.createElement('th');
+    thAct.textContent = 'Actions';
+    thAct.className = 'no-print';
+    hr.appendChild(thAct);
+    thead.appendChild(hr);
+
+    const tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    if (!pageRows.length) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="${sh.columns.length + 2}" style="text-align:center;color:var(--muted);padding:24px">No matching records · कोई मैच नहीं</td>`;
+      tbody.appendChild(tr);
+    } else {
+      pageRows.forEach(({ r, i }) => {
+        const tr = document.createElement('tr');
+        tr.dataset.idx = i;
+        if (state.selected.has(i)) tr.classList.add('selected');
+        if (state.highlightDups && state.dupKeys.has(i)) tr.classList.add('dup');
+
+        const tdCheck = document.createElement('td');
+        tdCheck.innerHTML = `<input type="checkbox" class="row-check" data-idx="${i}" ${state.selected.has(i) ? 'checked' : ''} />`;
+        tr.appendChild(tdCheck);
+
+        sh.columns.forEach(col => {
+          const td = document.createElement('td');
+          td.className = 'editable';
+          td.dataset.col = col;
+          td.dataset.idx = i;
+          td.title = String(r[col] ?? '');
+          td.textContent = r[col] ?? '';
+          td.addEventListener('dblclick', () => startInline(td, i, col));
+          tr.appendChild(td);
+        });
+
+        const tdAct = document.createElement('td');
+        tdAct.className = 'no-print';
+        tdAct.innerHTML = `<button class="btn btn-sm" data-edit="${i}">Edit</button>
+          <button class="btn btn-sm btn-danger" data-del="${i}">Del</button>`;
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+    }
+
+    $('#pageInfo').textContent = `Page ${state.page} / ${pages} · ${filtered.length} of ${sh.rows.length} records`;
+    $('#selectionInfo').textContent = state.selected.size ? `${state.selected.size} selected` : '';
+    $('#bulkDelBtn').disabled = state.selected.size === 0;
+    $('#prevBtn').disabled = state.page <= 1;
+    $('#nextBtn').disabled = state.page >= pages;
+
+    const checkAll = $('#checkAll');
+    if (checkAll) {
+      checkAll.checked = pageRows.length > 0 && pageRows.every(({ i }) => state.selected.has(i));
+      checkAll.addEventListener('change', () => {
+        pageRows.forEach(({ i }) => {
+          if (checkAll.checked) state.selected.add(i);
+          else state.selected.delete(i);
+        });
+        renderTable();
+      });
+    }
+  }
+
+  function startInline(td, idx, col) {
+    if (state.inline) return;
+    const sh = sheet();
+    state.inline = { idx, col };
+    td.classList.add('editing');
+    const val = sh.rows[idx][col] ?? '';
+    td.innerHTML = `<input value="${escapeAttr(val)}" />`;
+    const inp = td.querySelector('input');
+    inp.focus();
+    inp.select();
+    const commit = (ok) => {
+      if (!state.inline) return;
+      const newVal = inp.value;
+      td.classList.remove('editing');
+      state.inline = null;
+      if (ok && String(newVal) !== String(val)) {
+        pushHistory();
+        sh.rows[idx][col] = newVal;
+        scheduleSave();
+        renderDashboard();
+      }
+      td.textContent = sh.rows[idx][col] ?? '';
+      td.title = String(sh.rows[idx][col] ?? '');
+    };
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+      if (e.key === 'Escape') { e.preventDefault(); commit(false); }
+    });
+    inp.addEventListener('blur', () => commit(true));
+  }
+
+  function renderAll() {
+    renderSheetSelect();
+    renderColFilters();
+    renderDashboard();
+    renderTable();
+    $('#globalSearch').value = state.globalQ;
+    applyTheme();
+  }
+
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', state.theme);
+    $('#themeBtn').textContent = state.theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    localStorage.setItem('erm_theme', state.theme);
+  }
+
+  // ---------- events ----------
+  function bind() {
+    $('#importBtn').addEventListener('click', () => $('#fileInput').click());
+    $('#fileInput').addEventListener('change', (e) => { handleFiles(e.target.files); e.target.value = ''; });
+    $('#blankBtn').addEventListener('click', newBlankSheet);
+    $('#sheetSelect').addEventListener('change', (e) => {
+      state.activeSheet = e.target.value;
+      state.selected.clear();
+      state.page = 1;
+      state.colFilters = {};
+      state.sortCol = null;
+      scheduleSave();
+      renderAll();
+    });
+    $('#addRowBtn').addEventListener('click', () => {
+      if (!sheet()) return toast('Create or import a sheet first', 'err');
+      openModal('add');
+    });
+    $('#undoBtn').addEventListener('click', undo);
+    $('#bulkDelBtn').addEventListener('click', () => {
+      if (!state.selected.size) return;
+      if (!confirm(`Delete ${state.selected.size} selected record(s)? · क्या हटाना है?`)) return;
+      deleteRows([...state.selected]);
+    });
+    $('#addColBtn').addEventListener('click', () => {
+      if (!sheet()) return toast('Create or import a sheet first', 'err');
+      openModal('addcol');
+    });
+    $('#renameColBtn').addEventListener('click', () => {
+      if (!sheet()) return toast('Create or import a sheet first', 'err');
+      openModal('renamecol');
+    });
+    $('#delColBtn').addEventListener('click', () => {
+      if (!sheet()) return toast('Create or import a sheet first', 'err');
+      openModal('delcol');
+    });
+    $('#exportXlsxBtn').addEventListener('click', exportXlsx);
+    $('#exportCsvBtn').addEventListener('click', exportCsv);
+    $('#printBtn').addEventListener('click', () => window.print());
+    $('#dupBtn').addEventListener('click', () => {
+      state.highlightDups = !state.highlightDups;
+      renderDashboard();
+      renderTable();
+      toast(state.highlightDups ? `Highlighting ${state.dupKeys.size} duplicate row(s)` : 'Duplicate highlight off', 'ok');
+    });
+    $('#clearBtn').addEventListener('click', () => {
+      if (!confirm('Clear all data from this browser? · सारा डेटा साफ़?')) return;
+      pushHistory();
+      state.sheets = {};
+      state.sheetOrder = [];
+      state.activeSheet = null;
+      state.selected.clear();
+      scheduleSave();
+      renderAll();
+      toast('Cleared', 'ok');
+    });
+    $('#themeBtn').addEventListener('click', () => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme();
+    });
+    $('#globalSearch').addEventListener('input', (e) => {
+      state.globalQ = e.target.value;
+      state.page = 1;
+      renderTable();
+      renderDashboard();
+    });
+    $('#clearFiltersBtn').addEventListener('click', () => {
+      state.globalQ = '';
+      state.colFilters = {};
+      state.page = 1;
+      $('#globalSearch').value = '';
+      renderColFilters();
+      renderTable();
+      renderDashboard();
+    });
+    $('#pageSize').addEventListener('change', (e) => {
+      state.pageSize = Number(e.target.value);
+      state.page = 1;
+      renderTable();
+    });
+    $('#prevBtn').addEventListener('click', () => { state.page--; renderTable(); });
+    $('#nextBtn').addEventListener('click', () => { state.page++; renderTable(); });
+    $('#modalCancel').addEventListener('click', closeModal);
+    $('#modalSave').addEventListener('click', saveModal);
+    $('#modalBack').addEventListener('click', (e) => { if (e.target === $('#modalBack')) closeModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $('#modalBack').classList.contains('open')) closeModal();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) && state.inline) return;
+        if (!state.inline && !$('#modalBack').classList.contains('open')) { e.preventDefault(); undo(); }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveWorkspace();
+        toast('Saved locally · सेव हो गया', 'ok');
+      }
+    });
+
+    $('#dataTable').addEventListener('click', (e) => {
+      const edit = e.target.closest('[data-edit]');
+      const del = e.target.closest('[data-del]');
+      const check = e.target.closest('.row-check');
+      if (edit) openModal('edit', Number(edit.dataset.edit));
+      if (del) {
+        if (confirm('Delete this record? · हटाएँ?')) deleteRows([Number(del.dataset.del)]);
+      }
+      if (check) {
+        const i = Number(check.dataset.idx);
+        if (check.checked) state.selected.add(i);
+        else state.selected.delete(i);
+        renderTable();
+      }
+    });
+
+    const dz = $('#dropzone');
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, (e) => {
+      e.preventDefault(); dz.classList.add('drag');
+    }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, (e) => {
+      e.preventDefault(); dz.classList.remove('drag');
+    }));
+    dz.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+    dz.addEventListener('click', () => $('#fileInput').click());
+  }
+
+  // ---------- boot ----------
+  async function boot() {
+    if (typeof XLSX === 'undefined') {
+      toast('SheetJS failed to load', 'err');
+      return;
+    }
+    bind();
+    applyTheme();
+    const loaded = await loadWorkspace();
+    renderAll();
+    if (loaded) toast('Restored previous session · पिछला डेटा वापस', 'ok');
+  }
+
+  // expose for tests
+  window.__ERM__ = {
+    state,
+    handleFiles,
+    parseWorkbook,
+    newBlankSheet,
+    exportXlsx,
+    exportCsv,
+    openModal,
+    saveModal,
+    deleteRows,
+    pushHistory,
+    undo,
+    filteredRows,
+    saveWorkspace,
+    loadWorkspace,
+    renderAll,
+  };
+
+  boot();
+})();
+</script>
+</body>
+</html>
